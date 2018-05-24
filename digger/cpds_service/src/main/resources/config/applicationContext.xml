@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx" 
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	default-autowire="byName" default-lazy-init="true"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/data/jpa
+		 http://www.springframework.org/schema/data/jpa/spring-jpa-1.2.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context.xsd  
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+
+	<!-- http://www.springframework.org/schema/context/spring-context-4.3.xsd -->
+
+	<!-- 配置自动扫描的包 -->
+	<context:component-scan base-package="com.ko30">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+		<context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice" />
+	</context:component-scan>
+
+	<!-- spring工具类 方便在非spring管理环境中获取bean -->
+    <bean id="springUtils" class="com.ko30.common.util.SpringUtils"/>
+    
+	<!-- 加载属性文件 -->
+	<context:property-placeholder location="classpath*:config/sysconfig.properties" />
+
+	<!-- 配置数据源druid -->
+	<bean name="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driverClass}"></property>
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<!-- 初始化连接大小 -->
+		<property name="initialSize" value="${duird.initialSize}" />
+		<!-- 连接池最大使用连接数量 -->
+		<property name="maxActive" value="${duird.maxActive}" />
+		<!-- 连接池最大空闲 -->
+		<!-- <property name="maxIdle" value="${duird.maxIdle}" /> -->
+		<!-- 连接池最小空闲 -->
+		<property name="minIdle" value="${duird.minIdle}" />
+		<!-- 获取连接最大等待时间 -->
+		<property name="maxWait" value="${duird.maxWait}" />
+		<property name="validationQuery" value="${validationQuery.sqlserver}" />
+		<property name="testOnBorrow" value="${duird.testOnBorrow}" />
+		<property name="testOnReturn" value="${duird.testOnReturn}" />
+		<property name="testWhileIdle" value="${duird.testWhileIdle}" />
+
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="${duird.timeBetweenEvictionRunsMillis}" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="${duird.minEvictableIdleTimeMillis}" />
+
+		<!-- 打开removeAbandoned功能 -->
+		<property name="removeAbandoned" value="${duird.removeAbandoned}" />
+		<!-- 1800秒，也就是30分钟 -->
+		<property name="removeAbandonedTimeout" value="${duird.removeAbandonedTimeout}" />
+		<!-- 关闭abanded连接时输出错误日志 -->
+		<property name="logAbandoned" value="${duird.logAbandoned}" />
+
+		<!-- 开启Druid的监控统计功能 -->
+		<property name="filters" value="${duird.filters}" />
+		<!--<property name="filters" value="mergeStat" /> -->
+	</bean>
+
+	<!-- 配置JPA的EntityManagerFactory -->
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="persistenceProvider" ref="persistenceProvider" />
+		<property name="jpaVendorAdapter" ref="jpaVendorAdapter" />
+		<property name="jpaDialect" ref="jpaDialect" />
+		
+		<property name="packagesToScan" value="com.ko30.entity.model.po"></property>
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.ejb.naming_strategy">${hibernate.ejb.naming_strategy}</prop>
+				<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop> <!-- 自动创建|更新|验证数据库表结构 -->
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>  <!-- 数据库方言 -->
+				<prop key="hibernate.show_sql">${hibernate.show_sql}</prop> <!-- 控制台打印sql -->
+				<prop key="hibernate.format_sql">${hibernate.format_sql}</prop> <!-- 格式化sql -->
+				<prop key="connection.useUnicode">${connection.useUnicode}</prop> <!-- 连接数据库时是否使用Unicode编码 -->
+				<prop key="connection.characterEncoding">${connection.characterEncoding}</prop> <!-- 连接数据库时数据的传输字符集编码方式 -->
+				<!-- 二级缓存配置 -->
+				<!--开启二级缓存 -->
+				<!-- <prop key="hibernate.cache.use_second_level_cache">${hibernate.cache.use_second_level_cache}</prop>  -->
+				<!--开启查询缓存 -->
+				<!-- <prop key="hibernate.cache.use_query_cache">${hibernate.cache.use_query_cache}</prop>  -->
+				<!--指定二级缓存产品的提供商 -->
+				<!-- <prop key="hibernate.cache.region.factory_class">${hibernate.cache.region.factory_class}</prop>  -->
+			</props>
+		</property>
+		<property name="sharedCacheMode" value="ENABLE_SELECTIVE"></property>
+		<!-- 
+		<property name="loadTimeWeaver">
+			<bean
+				class="org.springframework.instrument.classloading.tomcat.TomcatLoadTimeWeaver" />
+		</property>
+		 -->
+	</bean>
+
+	<!-- 用于指定持久化实现厂商类 -->
+	<bean id="persistenceProvider" class="org.hibernate.jpa.HibernatePersistenceProvider" />
+
+	<!-- 用于设置JPA实现厂商的特定属性 -->
+	<bean id="jpaVendorAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+
+	<!-- 用于指定一些高级特性 -->
+	<bean id="jpaDialect" class="org.springframework.orm.jpa.vendor.HibernateJpaDialect" />
+
+	<!-- 配置事务 -->
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory"></property>
+	</bean>
+
+	<!-- 事务 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" />
+			<tx:method name="get*" read-only="true" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="select*" read-only="true" />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="insert*" propagation="REQUIRED" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- 事务入口 -->
+	<aop:config expose-proxy="true" proxy-target-class="true">
+		<aop:pointcut id="txPointcut" expression="execution(* com.ko30.service.*.*(..))" />
+		<aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice" />
+	</aop:config>
+
+	<!-- 配置事务注解 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	
+	<!-- 类型转换及数据格式化 -->
+    <bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean"/>
+    <!-- 直接把id转换为entity 必须非lazy否则无法注册-->
+    <bean id="domainClassConverter" class="org.springframework.data.repository.support.DomainClassConverter">
+        <constructor-arg ref="conversionService"/>
+    </bean>
+    <!--设置查询字符串转换器的conversion service-->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="staticMethod"
+                  value="com.ko30.common.base.entity.search.utils.SearchableConvertUtils.setConversionService"/>
+        <property name="arguments" ref="conversionService"/>
+    </bean>
+
+	<!-- 配置spring data -->
+	<jpa:repositories 
+		base-package="com.ko30.common.dao.**,com.ko30.facade.dao"
+		entity-manager-factory-ref="entityManagerFactory"
+		transaction-manager-ref="transactionManager" repository-impl-postfix="Impl"
+		factory-class="com.ko30.common.dao.support.SimpleBaseRepositoryFactoryBean">
+	</jpa:repositories>
+
+	<!-- redis配置 -->
+	<bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+		<property name="maxIdle" value="300" />
+		<property name="maxTotal" value="600" />
+		<property name="MaxWaitMillis" value="1000" />
+		<property name="testOnBorrow" value="true" />
+	</bean>
+
+	<!-- p:host-name="192.168.1.12"  p:port="6379"-->
+	<bean id="connectionFactory"
+		class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+		p:host-name="${redis.host}"
+		p:password="${redis.pass}"
+		p:timeout="${redis.timeOut}"
+		p:port="${redis.port}" p:pool-config-ref="poolConfig">
+	</bean>
+	
+	<!-- 	
+	<bean id="connectionFactory"
+		class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory"
+		p:host-name="${redis.host}"
+		p:port="${redis.port}" p:pool-config-ref="poolConfig">
+	</bean>
+ 	-->
+ 	
+	<bean id="redisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate">
+		<property name="connectionFactory" ref="connectionFactory" />
+	</bean>
+
+		
+</beans>
